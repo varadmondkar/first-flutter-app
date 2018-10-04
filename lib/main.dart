@@ -1,108 +1,94 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
+import 'dart:async';
+import 'dart:convert';
 
-void main() {
-  debugPaintSizeEnabled = true;
-  runApp(MyApp());
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
+final String url = "http://crm.emastpa.com.my/MemberInfo.json";
+
+class EmployeeInfo {
+  String Employee;
+  String empname;
+  String empdep;
+  Map<String, dynamic> EmployeeJSON = new Map<String, dynamic>();
 }
 
-class MyApp extends StatelessWidget {
+Future<String> jsonContent() async {
+  var res = await http.get(
+      Uri.encodeFull("http://crm.emastpa.com.my/MemberInfo.json"),
+      headers: {"Accept": "application/json"});
+  return res.body;
+}
+
+void main() => runApp(new MyApp());
+
+class MyApp extends StatefulWidget {
+  @override
+  MemberInfoState createState() => new MemberInfoState();
+}
+
+class MemberInfoState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
-    // Title Section
-    Widget titleSection = Container(
-      padding: EdgeInsets.all(32.0),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-              child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Container(
-                padding: EdgeInsets.only(bottom: 8.0),
-                child: Text(
-                  'Oeschinen Lake Campground',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.start,
-                ),
-              ),
-              Text(
-                'Kandersteg, Switzerland',
-                style: TextStyle(color: Colors.grey),
-                textAlign: TextAlign.start,
-              )
-            ],
-          )),
-          Icon(
-            Icons.star,
-            color: Colors.red,
-          ),
-          Text('41')
-        ],
-      ),
-    );
-
-    Column buildButtonColumn(IconData icon, String label) {
-      Color color = Theme.of(context).primaryColor;
-
-      return Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: <Widget>[
-          Icon(icon, color: color),
-          Container(
-            margin: EdgeInsets.only(top: 8.0),
-            child: Text(
-              label,
-              style: TextStyle(
-                  color: color, fontSize: 12.0, fontWeight: FontWeight.w400),
-            ),
-          )
-        ],
-      );
-    }
-
-    // Button Widget
-    Widget buttonSection = Container(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: <Widget>[
-          buildButtonColumn(Icons.call, 'Call'),
-          buildButtonColumn(Icons.near_me, 'Route'),
-          buildButtonColumn(Icons.share, 'Share')
-        ],
-      ),
-    );
-
-    // Text Widget
-    Widget textSection = Container(
-      padding: EdgeInsets.all(32.0),
-      child: Text(
-        'Lake Oeschinen lies at the foot of the Blüemlisalp in the Bernese Alps. Situated 1,578 meters above sea level, it is one of the larger Alpine Lakes. A gondola ride from Kandersteg, followed by a half-hour walk through pastures and pine forest, leads you to the lake, which warms to 20 degrees Celsius in the summer. Activities enjoyed here include rowing, and riding the summer toboggan run.',
-        softWrap: true,
-      ),
-    );
-
     return MaterialApp(
-      title: 'Design App',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: Scaffold(
-        appBar: AppBar(
-          title: Text('Design Application'),
-        ),
-        body: ListView(
-          children: <Widget>[
-            Image.asset(
-              'images/lake.jpg',
-              height: 240.0,
-              fit: BoxFit.fitWidth,
+      home: new Scaffold(
+        body: new Container(
+          child: new Center(
+            child: new FutureBuilder<String>(
+              future: jsonContent(),
+              builder: (context, snapshot) {
+                if (snapshot?.hasData) {
+                  var mydata = json.decode(snapshot.data);
+                  final name = mydata["Employee"]["Name"];
+
+                  return new ListView.builder(
+                    itemBuilder: (BuildContext context, int index) {
+                      return new Card(
+                        child: new Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: <Widget>[
+                            new ListTile(
+                              title: new Text("Name "),
+                              subtitle: new Text(name),
+                            ),
+                            new ListTile(
+                              title: new Text("Identification "),
+                              subtitle: new Text(
+                                  mydata["Employee"]["Identification"]),
+                            ),
+                            new ListTile(
+                              title: new Text("Company "),
+                              subtitle: new Text(
+                                  mydata["Employee"]["Company"]),
+                            ),
+                            new ListTile(
+                              title: new Text("Date Of Birth "),
+                              subtitle: new Text(
+                                  mydata["Employee"]["DateOfBirth"]),
+                            ),
+                            const Divider(
+                              color: Colors.white,
+                              height: 50.0,
+                            ),
+                            new MaterialButton(
+                              color: Colors.indigo,
+                              height: 50.0,
+                              minWidth: 50.0,
+                              textColor: Colors.white,
+                              child: new Text("More"),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                    itemCount: mydata == null ? 0 : mydata.length,
+                  );
+                } else {
+                  return CircularProgressIndicator();
+                }
+              },
             ),
-            titleSection,
-            buttonSection,
-            textSection
-          ],
+          ),
         ),
       ),
     );
